@@ -24,16 +24,16 @@ jobs:
       - name: Prepare VPS Directory
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.VPS_IP }}
-          username: ${{ secrets.VPS_USER }}
+          host: 72.61.249.10
+          username: root
           key: ${{ secrets.VPS_SSH_KEY }}
           script: mkdir -p ~/trooder/gateway
 
       - name: Upload JAR to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.VPS_IP }}
-          username: ${{ secrets.VPS_USER }}
+          host: 72.61.249.10
+          username: root
           key: ${{ secrets.VPS_SSH_KEY }}
           source: "target/*.jar"
           target: "~/trooder/gateway"
@@ -42,8 +42,8 @@ jobs:
       - name: Restart Gateway Service
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.VPS_IP }}
-          username: ${{ secrets.VPS_USER }}
+          host: 72.61.249.10
+          username: root
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             # Navigate to the folder
