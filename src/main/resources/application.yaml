@@ -2,4 +2,4 @@ spring:
   application:
     name: api-gateway
   config:
-    import: "optional:configserver:http://72.61.249.10:8888/swiftShopConfigServer"
+    import: "optional:configserver:http://72.61.249.10:8888/"

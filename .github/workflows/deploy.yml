@@ -1,0 +1,72 @@
+name: CI/CD API Gateway
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build JAR with Maven
+        run: mvn clean package -DskipTests
+
+      - name: Prepare VPS Directory
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_IP }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: mkdir -p ~/trooder/gateway
+
+      - name: Upload JAR to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_IP }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "target/*.jar"
+          target: "~/trooder/gateway"
+          strip_components: 1
+
+      - name: Restart Gateway Service
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_IP }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            # Navigate to the folder
+            cd ~/trooder/gateway
+            
+            # Find and kill the old process running on port 8080
+            # We use fuser or lsof to ensure the port is cleared
+            PID=$(lsof -t -i:8080) || true
+            if [ -n "$PID" ]; then 
+              echo "Stopping old process: $PID"
+              kill -9 $PID
+            fi
+            
+            # Run the new JAR in the background with Java 21 Virtual Threads enabled
+            # 'nohup' keeps it running, '&' puts it in background
+            echo "Starting new API Gateway..."
+            nohup java -Dspring.threads.virtual.enabled=true -jar *.jar > gateway.log 2>&1 &
+            
+            # Brief wait to check if it crashed immediately
+            sleep 5
+            if pgrep -f ".jar" > /dev/null; then
+              echo "Gateway started successfully!"
+            else
+              echo "Gateway failed to start. Check gateway.log"
+              exit 1
+            fi
