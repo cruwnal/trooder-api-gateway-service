@@ -11,7 +11,7 @@ import java.util.Map;
 
 @RestController
 public class FallbackController {
-
+// fallback controller added
     @GetMapping("/fallback/product-service")
     public Mono<ResponseEntity<Map<String, Object>>> productServiceFallback() {
         Map<String, Object> response = new HashMap<>();
